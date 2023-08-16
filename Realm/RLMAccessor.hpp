@@ -121,13 +121,13 @@ public:
                                              realm::Property const& prop);
 
     template<typename T>
-    T unbox(__unsafe_unretained id const v, realm::CreatePolicy = realm::CreatePolicy::Skip, realm::ObjKey = {}) {
+    T unbox(__unsafe_unretained id const v, realm::CreatePolicy = realm::CreatePolicy::Skip, realm::ObjKey = {}, realm::ColKey c = {}) {
         return RLMStatelessAccessorContext::unbox<T>(v);
     }
     template<>
-    realm::Obj unbox(id v, realm::CreatePolicy, realm::ObjKey);
+    realm::Obj unbox(id v, realm::CreatePolicy, realm::ObjKey, realm::ColKey);
     template<>
-    realm::Mixed unbox(id v, realm::CreatePolicy, realm::ObjKey);
+    realm::Mixed unbox(id v, realm::CreatePolicy, realm::ObjKey, realm::ColKey);
 
     realm::Obj create_embedded_object();
 
@@ -135,6 +135,7 @@ public:
     RLMAccessorContext(RLMObjectBase *parentObject, const realm::Property *property = nullptr);
     RLMAccessorContext(RLMObjectBase *parentObject, realm::ColKey);
     RLMAccessorContext(RLMClassInfo& info);
+    RLMAccessorContext(RLMClassInfo& parentInfo, RLMClassInfo& info);
 
     // The property currently being accessed; needed for KVO things for boxing
     // List and Results

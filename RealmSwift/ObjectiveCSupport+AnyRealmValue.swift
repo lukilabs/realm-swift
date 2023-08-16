@@ -50,6 +50,10 @@ public extension ObjectiveCSupport {
             return u as NSUUID
         case let .object(o):
             return o
+        case let .dictionary(d):
+            return d as NSDictionary
+        case let .list(l):
+            return l as NSArray
         default:
             return nil
         }
@@ -120,6 +124,16 @@ public extension ObjectiveCSupport {
                 return .none
             }
             return .object(val)
+        case RLMPropertyType.dictionary:
+            guard let val = value as? Dictionary<String, AnyRealmValue> else {
+                return .none
+            }
+            return .dictionary(val)
+        case RLMPropertyType.array:
+            guard let val = value as? Array<AnyRealmValue> else {
+                return .none
+            }
+            return .list(val)
         default:
             return .none
         }

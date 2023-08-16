@@ -21,6 +21,8 @@ import Foundation
 import Realm
 
 /// A enum for storing and retrieving values associated with an `AnyRealmValue` property.
+/// `AnyRealmValue` can be as well a collection (List, Dictionary) of `AnyRealmValue`, meaning that you can have
+/// nested collections inside a `AnyRealmValue`.
 public enum AnyRealmValue: Hashable {
     /// Represents `nil`
     case none
@@ -46,6 +48,10 @@ public enum AnyRealmValue: Hashable {
     case decimal128(Decimal128)
     /// A UUID type.
     case uuid(UUID)
+    /// Set type.
+    case dictionary(Dictionary<String, AnyRealmValue>)
+    /// List type.
+    case list(Array<AnyRealmValue>)
 
     /// Returns an `Int` if that is what the stored value is, otherwise `nil`.
     public var intValue: Int? {
@@ -137,6 +143,22 @@ public enum AnyRealmValue: Hashable {
             return nil
         }
         return o as? T
+    }
+
+    /// Returns a `Map<String, AnyRealmValue>` if that is what the stored value is, otherwise `nil`.
+    public var dictionaryValue: Dictionary<String, AnyRealmValue>? {
+        guard case let .dictionary(i) = self else {
+            return nil
+        }
+        return i
+    }
+
+    /// Returns a `List<AnyRealmValue>` if that is what the stored value is, otherwise `nil`.
+    public var listValue: Array<AnyRealmValue>? {
+        guard case let .list(i) = self else {
+            return nil
+        }
+        return i
     }
 
     /// Returns a `DynamicObject` if the stored value is an `Object`, otherwise `nil`.

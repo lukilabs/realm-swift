@@ -285,7 +285,7 @@ static std::optional<RLMPropertyType> typeFromProtocolString(const char *type) {
             }
             prefixLen = typeLen+size_t(2); // +2 start at the type name
             collectionName = @"RLMDictionary";
-
+            
             // Get the key type
             if (strstr(code + dictionaryPrefixLen, "RLMString><") != NULL) {
                 _dictionaryKeyType = RLMPropertyTypeString;

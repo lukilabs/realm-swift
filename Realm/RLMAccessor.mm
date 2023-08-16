@@ -34,8 +34,9 @@
 #import "RLMUUID_Private.hpp"
 #import "RLMUtil.hpp"
 
-#import <realm/object-store/results.hpp>
+#import <realm/object-store/object.hpp>
 #import <realm/object-store/property.hpp>
+#import <realm/object-store/results.hpp>
 
 #import <objc/runtime.h>
 #import <objc/message.h>
@@ -128,7 +129,10 @@ void setValueOrNull(__unsafe_unretained RLMObjectBase *const obj, ColKey col,
     RLMTranslateError([&] {
         if (value) {
             if constexpr (std::is_same_v<T, realm::Mixed>) {
-                obj->_row.set(col, RLMObjcToMixed(value, obj->_realm, realm::CreatePolicy::SetLink));
+                realm::Object o(obj->_realm->_realm, *obj->_info->objectSchema, obj->_row);
+                RLMAccessorContext ctx(obj);
+                RLMProperty *property = obj->_info->propertyForTableColumn(col);
+                o.set_property_value(ctx, getProperty(obj, property).name, value ?: NSNull.null);
             }
             else {
                 RLMStatelessAccessorContext ctx;
@@ -829,6 +833,13 @@ RLMAccessorContext::RLMAccessorContext(RLMClassInfo& info)
 {
 }
 
+RLMAccessorContext::RLMAccessorContext(RLMClassInfo& parentInfo, RLMClassInfo& info)
+: _realm(info.realm)
+, _info(info)
+, _parentObjectInfo(&parentInfo)
+{
+}
+
 RLMAccessorContext::RLMAccessorContext(__unsafe_unretained RLMObjectBase *const parent,
                                        const realm::Property *prop)
 : _realm(parent->_realm)
@@ -890,7 +901,8 @@ realm::Obj RLMAccessorContext::create_embedded_object() {
 }
 
 id RLMAccessorContext::box(realm::Mixed v) {
-    return RLMMixedToObjc(v, _realm, &_info);
+    auto property = (currentProperty) ? currentProperty : _info.propertyForTableColumn(_colKey);
+    return RLMMixedToObjc(v, _realm, &_info, property, _parentObject);
 }
 
 id RLMAccessorContext::box(realm::List&& l) {
@@ -912,6 +924,9 @@ id RLMAccessorContext::box(realm::object_store::Set&& s) {
 id RLMAccessorContext::box(realm::object_store::Dictionary&& d) {
     REALM_ASSERT(_parentObjectInfo);
     REALM_ASSERT(currentProperty);
+    if (currentProperty.type == RLMPropertyTypeAny) {
+        currentProperty.dictionaryKeyType = RLMPropertyTypeString;
+    }
     return [[RLMManagedDictionary alloc] initWithBackingCollection:std::move(d)
                                                         parentInfo:_parentObjectInfo
                                                           property:currentProperty];
@@ -992,7 +1007,7 @@ realm::UUID RLMStatelessAccessorContext::unbox(id v) {
     return RLMObjcToUUID(bridged<NSUUID>(v));
 }
 template<>
-realm::Mixed RLMAccessorContext::unbox(__unsafe_unretained id v, CreatePolicy p, ObjKey) {
+realm::Mixed RLMAccessorContext::unbox(__unsafe_unretained id v, CreatePolicy p, ObjKey, ColKey c) {
     return RLMObjcToMixed(v, _realm, p);
 }
 
@@ -1100,7 +1115,7 @@ RLMAccessorContext::createObject(id value, realm::CreatePolicy policy,
 
     try {
         realm::Object::create(*this, _realm->_realm, *_info.objectSchema,
-                              (id)value, policy, existingKey, outObj);
+                              realm::util::any_cast<id>(value), policy, existingKey, outObj);
     }
     catch (std::exception const& e) {
         @throw RLMException(e);
@@ -1130,7 +1145,7 @@ RLMAccessorContext::createObject(id value, realm::CreatePolicy policy,
 }
 
 template<>
-realm::Obj RLMAccessorContext::unbox(__unsafe_unretained id const v, CreatePolicy policy, ObjKey key) {
+realm::Obj RLMAccessorContext::unbox(__unsafe_unretained id const v, CreatePolicy policy, ObjKey key, ColKey) {
     return createObject(v, policy, false, key).first;
 }
 
