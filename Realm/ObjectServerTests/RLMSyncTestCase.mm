@@ -32,9 +32,9 @@
 #import "RLMChildProcessEnvironment.h"
 #import "RLMRealmUtil.hpp"
 
+#import <realm/object-store/sync/app_user.hpp>
 #import <realm/object-store/sync/sync_manager.hpp>
 #import <realm/object-store/sync/sync_session.hpp>
-#import <realm/object-store/sync/sync_user.hpp>
 
 #if TARGET_OS_OSX
 
@@ -56,7 +56,7 @@
 @end
 
 @interface RLMUser ()
-- (std::shared_ptr<realm::SyncUser>)_syncUser;
+- (std::shared_ptr<realm::app::User>)_syncUser;
 @end
 
 @interface TestNetworkTransport : RLMNetworkTransport
@@ -421,9 +421,11 @@ static NSURL *syncDirectoryForChildProcess() {
 }
 
 - (void)setInvalidTokensForUser:(RLMUser *)user {
-    auto token = self.badAccessToken.UTF8String;
-    user._syncUser->log_out();
-    user._syncUser->log_in(token, token);
+    realm::RealmJWT token(std::string_view(self.badAccessToken.UTF8String));
+    user._syncUser->update_data_for_testing([&](auto& data) {
+        data.access_token = token;
+        data.refresh_token = token;
+    });
 }
 
 - (void)writeToPartition:(NSString *)partition block:(void (^)(RLMRealm *))block {
@@ -554,15 +556,13 @@ static bool s_opensApp;
             [user logOutWithCompletion:^(NSError *) {
                 [ex fulfill];
             }];
-
-            // Sessions are removed from the user asynchronously after a logout.
-            // We need to wait for this to happen before calling resetForTesting as
-            // that expects all sessions to be cleaned up first.
-            if (user.allSessions.count) {
-                [exs addObject:[self expectationForPredicate:[NSPredicate predicateWithFormat:@"allSessions.@count == 0"]
-                                         evaluatedWithObject:user handler:nil]];
-            }
         }];
+
+        // Sessions are removed from the user asynchronously after a logout.
+        // We need to wait for this to happen before calling resetForTesting as
+        // that expects all sessions to be cleaned up first.
+        [exs addObject:[self expectationForPredicate:[NSPredicate predicateWithFormat:@"hasAnySessions = false"]
+                                 evaluatedWithObject:app.syncManager handler:nil]];
     }
 
     if (exs.count) {
