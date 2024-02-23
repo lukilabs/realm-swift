@@ -1,19 +1,56 @@
 10.48.0 Release notes (2024-03-07)
 =============================================================
 
+
+This version introduces a new Realm file format version (v24). Opening existing
+Realm files will automatically upgrade the files, making them unable to be
+opened by older versions. This upgrade process should typically be very fast
+unless you have large Sets of AnyRealmValue, String, or Data.
+
 ### Enhancements
 
 * Lifted a limitation that would prevent declaring a model with only computed
   properties. ([#8414](https://github.com/realm/realm-swift/issues/8414))
 * Add Xcode 15.3 to the release package ([PR #8502](https://github.com/realm/realm-swift/pull/8502)).
+* Lifted a limitation that would prevent declaring a model with only computed properties. ([#8414](https://github.com/realm/realm-swift/issues/8414))
+* Storage of Decimal128 properties has been optimised similarly to Int
+  properties so that the individual values will take up 0 bits (if all nulls),
+  32 bits, 64 bits or 128 bits depending on what is needed.
+  ([Core #6111](https://github.com/realm/realm-core/pull/6111))
 
 ### Fixed
+* <How to hit and notice issue? what was the impact?> ([#????](https://github.com/realm/realm-swift/issues/????), since v?.?.?)
+* Fix multiple arguments support via the `REALM_EXTRA_BUILD_ARGUMENTS` environment variable in `build.sh`. ([PR #8413](https://github.com/realm/realm-swift/pulls/8413)). Thanks, [@hisaac](https://github.com/hisaac)!
+* Sorting on binary Data was done by comparing bytes as signed char rather than
+  unsigned char, resulting in very strange orders (since sorting on Data was
+  enabled in v6.0.4)
+* Sorting on AnyRealmValue did not use a valid total ordering, and certain
+  combinations of values could result in values not being sorted or potentially
+  even crashes. The resolution for this will result in some previously-valid
+  combinations of values of different types being sorted in different orders
+  than previously (since the introduction of AnyRealmValue in 10.8.0).
+* RLMSet/MutableSet was inconsistent about if it considered a String and a Data
+  containing the utf-8 encoded bytes of that String to be equivalent. They are
+  now always considered distinct. (since the introduction of sets in v10.8.0).
+* Equality queries on a Mixed property with an index could sometimes return
+  incorrect results if values of different types happened to have the same hash
+  code. ([Core 6407](https://github.com/realm/realm-core/issues/6407) since v10.8.0).
+* Creating more than 8388606 links pointing to a single object would crash.
+  ([Core #6577](https://github.com/realm/realm-core/issues/6577), since v5.0.0)
+* A Realm generated on a non-apple ARM 64 device and copied to another platform
+  (and vice-versa) were non-portable due to a sorting order difference. This
+  impacts strings or binaries that have their first difference at a non-ascii
+  character. These items may not be found in a set, or in an indexed column if
+  the strings had a long common prefix (> 200 characters).
+  ([Core #6670](https://github.com/realm/realm-core/pull/6670), since 2.0.0 for indexes, and since since the introduction of sets in v10.8.0)
 
 * Fix multiple arguments support via the `REALM_EXTRA_BUILD_ARGUMENTS`
   environment variable in `build.sh`. ([PR #8413](https://github.com/realm/realm-swift/pulls/8413)).
   Thanks, [@hisaac](https://github.com/hisaac)!
 * Fix some of the new sendability warnings introduced in Xcode 15.3
   ([PR #8502](https://github.com/realm/realm-swift/pull/8502)).
+### Breaking Changes
+* Drop support for opening pre-v5.0.0 Realm files.
 
 ### Compatibility
 
@@ -22,6 +59,10 @@
 * Carthage release for Swift is built with Xcode 15.3.0.
 * CocoaPods: 1.10 or later.
 * Xcode: 14.2-15.3.0.
+* Xcode: 14.2-15.2.0.
+
+### Internal
+* Upgraded realm-core from 13.26.0 to 14.1.0
 
 10.47.0 Release notes (2024-02-12)
 =============================================================
