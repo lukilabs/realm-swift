@@ -99,7 +99,7 @@ typedef RLM_CLOSED_ENUM(int32_t, RLMPropertyType) {
     /** Dictionary: `NSDictionary`, `Map` (Swift) */
     RLMPropertyTypeDictionary = 512,
     /** Set: `RLMArray`, `List` (Swift) */
-    RLMPropertyTypeArray = 128
+    RLMPropertyTypeList = 128
 };
 
 #pragma mark - Notification Constants

@@ -102,6 +102,8 @@ static NSArray *toArray(std::vector<realm::Mixed> const& v) {
                                            property:(__unsafe_unretained RLMProperty *const)property {
     if (property.type == RLMPropertyTypeObject)
         self = [self initWithObjectClassName:property.objectClassName keyType:property.dictionaryKeyType];
+    else if (property.type == RLMPropertyTypeAny)
+        self = [self initWithObjectType:property.type optional:property.optional keyType:RLMPropertyTypeString];
     else
         self = [self initWithObjectType:property.type optional:property.optional keyType:property.dictionaryKeyType];
     if (self) {

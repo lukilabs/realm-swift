@@ -611,6 +611,8 @@ static void validateArrayBounds(__unsafe_unretained RLMArray *const ar,
     return _key;
 }
 
+@synthesize rlm_valueType;
+
 @end
 
 @implementation RLMSortDescriptor

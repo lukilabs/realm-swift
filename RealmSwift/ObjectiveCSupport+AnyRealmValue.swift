@@ -51,9 +51,9 @@ public extension ObjectiveCSupport {
         case let .object(o):
             return o
         case let .dictionary(d):
-            return d as NSDictionary
+            return (d._rlmObjcValue as? RLMDictionary<AnyObject, AnyObject>)
         case let .list(l):
-            return l as NSArray
+            return (l._rlmObjcValue as? RLMArray<AnyObject>)
         default:
             return nil
         }
@@ -125,15 +125,15 @@ public extension ObjectiveCSupport {
             }
             return .object(val)
         case RLMPropertyType.dictionary:
-            guard let val = value as? Dictionary<String, AnyRealmValue> else {
+            guard let val = value as? RLMDictionary<NSString, RLMValue> else {
                 return .none
             }
-            return .dictionary(val)
-        case RLMPropertyType.array:
-            guard let val = value as? Array<AnyRealmValue> else {
+            return AnyRealmValue.dictionary(Map<String, AnyRealmValue>(collection: val))
+        case RLMPropertyType.list:
+            guard let val = value as? RLMArray<RLMValue> else {
                 return .none
             }
-            return .list(val)
+            return AnyRealmValue.list(List<AnyRealmValue>(collection: val))
         default:
             return .none
         }

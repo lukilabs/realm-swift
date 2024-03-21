@@ -1128,6 +1128,9 @@ void QueryBuilder::do_add_constraint(RLMPropertyType type, NSPredicateOperatorTy
                                      column.resolve<W<Mixed>>(),
                                      value);
             });
+        case RLMPropertyTypeDictionary:
+        case RLMPropertyTypeList:
+            REALM_UNREACHABLE();
     }
 }
 

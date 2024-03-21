@@ -48,10 +48,10 @@ public enum AnyRealmValue: Hashable {
     case decimal128(Decimal128)
     /// A UUID type.
     case uuid(UUID)
-    /// Set type.
-    case dictionary(Dictionary<String, AnyRealmValue>)
+    /// Dictionary type.
+    case dictionary(Map<String, AnyRealmValue>)
     /// List type.
-    case list(Array<AnyRealmValue>)
+    case list(List<AnyRealmValue>)
 
     /// Returns an `Int` if that is what the stored value is, otherwise `nil`.
     public var intValue: Int? {
@@ -146,19 +146,19 @@ public enum AnyRealmValue: Hashable {
     }
 
     /// Returns a `Map<String, AnyRealmValue>` if that is what the stored value is, otherwise `nil`.
-    public var dictionaryValue: Dictionary<String, AnyRealmValue>? {
-        guard case let .dictionary(i) = self else {
+    public var dictionaryValue: Map<String, AnyRealmValue>? {
+        guard case let .dictionary(d) = self else {
             return nil
         }
-        return i
+        return d
     }
 
     /// Returns a `List<AnyRealmValue>` if that is what the stored value is, otherwise `nil`.
-    public var listValue: Array<AnyRealmValue>? {
-        guard case let .list(i) = self else {
+    public var listValue: List<AnyRealmValue>? {
+        guard case let .list(l) = self else {
             return nil
         }
-        return i
+        return l
     }
 
     /// Returns a `DynamicObject` if the stored value is an `Object`, otherwise `nil`.
@@ -177,5 +177,21 @@ public enum AnyRealmValue: Hashable {
     /// Required for conformance to `AddableType`
     public init() {
         self = .none
+    }
+    
+    public static func fromDictionary(_ dictionary: Dictionary<String, AnyRealmValue>) -> AnyRealmValue {
+        let map = Map<String, AnyRealmValue>()
+        dictionary.forEach { (key, value) in
+            map.setValue(value, forKey: key)
+        }
+        return AnyRealmValue.dictionary(map)
+    }
+    
+    public static func fromArray(_ array: Array<AnyRealmValue>) -> AnyRealmValue {
+        let list = List<AnyRealmValue>()
+        array.forEach { item in
+            list.append(item)
+        }
+        return AnyRealmValue.list(list)
     }
 }

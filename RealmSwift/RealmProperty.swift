@@ -47,7 +47,8 @@ public final class RealmProperty<Value: RealmPropertyType>: RLMSwiftValueStorage
      */
     public var value: Value {
         get {
-            staticBridgeCast(fromObjectiveC: RLMGetSwiftValueStorage(self) ?? NSNull())
+            let a: Value = staticBridgeCast(fromObjectiveC: RLMGetSwiftValueStorage(self) ?? NSNull())
+            return a
         }
         set {
             RLMSetSwiftValueStorage(self, staticBridgeCast(fromSwift: newValue))

@@ -236,57 +236,241 @@ class AnyRealmValueObjectTests: TestCase {
 }
 
 class AnyRealmValueCollectionTests: TestCase {
-//    func testDictionaryMixedCollection() {
-//        let o = AnyRealmTypeObject()
-//        let dictionary = Map<String, AnyRealmValue>()
-//        dictionary["keyInt"] = .int(5)
-//        dictionary["keyString"] = .string("Realm")
-//        dictionary["keyObject"] = .object(o)
-//        o.anyValue.value = .dictionary(dictionary)
-//        XCTAssertEqual(o.anyValue.value.dictionaryValue?["keyInt"], .int(5))
-//        XCTAssertEqual(o.anyValue.value.dictionaryValue?["keyString"], .string("Realm"))
-//        XCTAssertEqual(o.anyValue.value.dictionaryValue?["keyObject"], .object(o))
-//
-//        XCTAssertEqual(o.anyValue.value.dictionaryValue?["keyInt"]?.intValue, 5)
-//        XCTAssertEqual(o.anyValue.value.dictionaryValue?["keyString"]?.stringValue, "Realm")
-//        XCTAssertEqual(o.anyValue.value.dictionaryValue?["keyObject"]?.object(AnyRealmTypeObject.self), o)
-//    }
+    func testAnyMixedDictionary() {
+        let so = SwiftStringObject()
+        so.stringCol = "hello"
+        let d = Date.now
+        let oid = ObjectId.generate()
+        let uuid = UUID()
+        
+        func assertObject(_ o: AnyRealmTypeObject) {
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key1"], .string("hello"))
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key2"], .bool(false))
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key3"], .int(234))
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key4"], .float(789.123))
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key5"], .double(12345.678901))
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key6"], .data("a".data(using: .utf8)!))
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key7"], .date(d))
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key9"], .objectId(oid))
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key10"], .uuid(uuid))
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key11"], .decimal128(Decimal128(number: 567)))
 
-//    func testArrayMixedCollection() {
-//        let o = AnyRealmTypeObject()
-//        let list = List<AnyRealmValue>()
-//        list.append(.int(5))
-//        list.append(.string("Realm"))
-//        list.append(.object(o))
-//        o.anyValue.value = .list(list)
-//        XCTAssertEqual(o.anyValue.value.listValue?[0], .int(5))
-//        XCTAssertEqual(o.anyValue.value.listValue?[1], .string("Realm"))
-//        XCTAssertEqual(o.anyValue.value.listValue?[2], .object(o))
-//
-//        XCTAssertEqual(o.anyValue.value.listValue?[0].intValue, 5)
-//        XCTAssertEqual(o.anyValue.value.listValue?[1].stringValue, "Realm")
-//        XCTAssertEqual(o.anyValue.value.listValue?[2].object(AnyRealmTypeObject.self), o)
-//    }
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key1"]?.stringValue, "hello")
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key2"]?.boolValue, false)
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key3"]?.intValue, 234)
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key4"]?.floatValue, 789.123)
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key5"]?.doubleValue, 12345.678901)
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key6"]?.dataValue, "a".data(using: .utf8)!)
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key7"]?.dateValue, d)
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key8"]?.object(SwiftStringObject.self)?.stringCol, so.stringCol)
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key9"]?.objectIdValue, oid)
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key10"]?.uuidValue, uuid)
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key11"]?.decimal128Value, Decimal128(number: 567))
+        }
+        
+        let dictionary: Dictionary<String, AnyRealmValue> = [
+            "key1" : .string("hello"),
+            "key2" : .bool(false),
+            "key3" : .int(234),
+            "key4" : .float(789.123),
+            "key5" : .double(12345.678901),
+            "key6" : .data("a".data(using: .utf8)!),
+            "key7" : .date(d),
+            "key8" : .object(so),
+            "key9" : .objectId(oid),
+            "key10" : .uuid(uuid),
+            "key11" : .decimal128(Decimal128(number: 567))
+        ]
+        
+        let dictionary1: Dictionary<String, AnyRealmValue> = [
+            "key" : .none
+        ]
+        
+        let o = AnyRealmTypeObject()
+        // Unmanaged Set
+        o.anyValue.value = AnyRealmValue.fromDictionary(dictionary)
+        // Unamanged Read
+        assertObject(o)
+        // Unmanaged update
+        o.anyValue.value = AnyRealmValue.fromDictionary(dictionary1)
+        // Update assert
+        XCTAssertEqual(o.anyValue.value.dictionaryValue?["key"], AnyRealmValue.none)
+        
+        // Add mixed collection to object
+        let realm = realmWithTestPath()
+        try! realm.write {
+            realm.add(o)
+        }
+        // Add assert
+        XCTAssertEqual(o.anyValue.value.dictionaryValue?["key"], AnyRealmValue.none)
+        
+        // Update managed object
+        try! realm.write {
+            o.anyValue.value = AnyRealmValue.fromDictionary(dictionary1)
+        }
+        // Update assert
+        XCTAssertEqual(o.anyValue.value.dictionaryValue?["key"], AnyRealmValue.none)
+        
+        try! realm.write {
+            let object = realm.create(AnyRealmTypeObject.self, value: [ "anyValue" : dictionary ])
+            assertObject(object)
+        }
+        
+        // Results
+        let result = realm.objects(AnyRealmTypeObject.self).last
+        
+        // Results assert
+        XCTAssertNotNil(result)
+        assertObject(result!)
+    }
+    
+    func testAnyMixedNestedDictionary() {
+        let so = SwiftStringObject()
+        so.stringCol = "hello"
+        
+        func assertObject(_ o: AnyRealmTypeObject) {
+            XCTAssertEqual(o.anyValue.value.dictionaryValue?["key0"]?.dictionaryValue?["key1"]?.dictionaryValue?["key2"]?.dictionaryValue?["key3"]?.dictionaryValue?["key4"]?.object(SwiftStringObject.self)?.stringCol, "hello")
+        }
+        
+        let subDict1: Dictionary<String, AnyRealmValue> = [ "key4" : .object(so) ]
+        let subDict2: Dictionary<String, AnyRealmValue> = [ "key3" : AnyRealmValue.fromDictionary(subDict1) ]
+        let subDict3: Dictionary<String, AnyRealmValue> = [ "key2" : AnyRealmValue.fromDictionary(subDict2) ]
+        let subDict4: Dictionary<String, AnyRealmValue> = [ "key1" : AnyRealmValue.fromDictionary(subDict3) ]
+        let dictionary: Dictionary<String, AnyRealmValue> = [
+            "key0" : AnyRealmValue.fromDictionary(subDict4),
+            "key2" : .bool(false)
+        ]
+        
+        let dictionary1: Dictionary<String, AnyRealmValue> = [
+            "key" : .none
+        ]
+        
+        let o = AnyRealmTypeObject()
+        // Unmanaged Set
+        o.anyValue.value = AnyRealmValue.fromDictionary(dictionary)
+        // Unamanged Read
+        assertObject(o)
+        // Unmanaged update
+        o.anyValue.value = AnyRealmValue.fromDictionary(dictionary1)
+        // Update assert
+        XCTAssertEqual(o.anyValue.value.dictionaryValue?["key"], AnyRealmValue.none)
+        
+        // Add mixed collection to object
+        let realm = realmWithTestPath()
+        try! realm.write {
+            realm.add(o)
+        }
+        // Add assert
+        XCTAssertEqual(o.anyValue.value.dictionaryValue?["key"], AnyRealmValue.none)
+        
+        // Update managed object
+        try! realm.write {
+            o.anyValue.value = AnyRealmValue.fromDictionary(dictionary1)
+        }
+        // Update assert
+        XCTAssertEqual(o.anyValue.value.dictionaryValue?["key"], AnyRealmValue.none)
+        
+        try! realm.write {
+            let object = realm.create(AnyRealmTypeObject.self, value: [ "anyValue" : dictionary ])
+            assertObject(object)
+        }
+        
+        // Results
+        let result = realm.objects(AnyRealmTypeObject.self).last
+        
+        // Results assert
+        XCTAssertNotNil(result)
+        assertObject(result!)
+    }
+    
+    func testAnyMixedList() {
+        let so = SwiftStringObject()
+        so.stringCol = "hello"
+        let d = Date.now
+        let oid = ObjectId.generate()
+        let uuid = UUID()
+        
+        func assertObject(_ o: AnyRealmTypeObject) {
+            XCTAssertEqual(o.anyValue.value.listValue?[0], .string("hello"))
+            XCTAssertEqual(o.anyValue.value.listValue?[1], .bool(false))
+            XCTAssertEqual(o.anyValue.value.listValue?[2], .int(234))
+            XCTAssertEqual(o.anyValue.value.listValue?[3], .float(789.123))
+            XCTAssertEqual(o.anyValue.value.listValue?[4], .double(12345.678901))
+            XCTAssertEqual(o.anyValue.value.listValue?[5], .data("a".data(using: .utf8)!))
+            XCTAssertEqual(o.anyValue.value.listValue?[6], .date(d))
+            XCTAssertEqual(o.anyValue.value.listValue?[8], .objectId(oid))
+            XCTAssertEqual(o.anyValue.value.listValue?[9], .uuid(uuid))
+            XCTAssertEqual(o.anyValue.value.listValue?[10], .decimal128(Decimal128(number: 567)))
 
-//    func testNestedMixedCollection() {
-//        let o = AnyRealmTypeObject()
-//        let list = List<AnyRealmValue>()
-//        list.append(.int(5))
-//        let dictionary = Map<String, AnyRealmValue>()
-//        dictionary["listKey"] = .list(list)
-//        let list2 = List<AnyRealmValue>()
-//        list2.append(.dictionary(dictionary))
-//        o.anyValue.value = .list(list2)
-//        XCTAssertEqual(o.anyValue.value, .list(list2))
-//        XCTAssertEqual(o.anyValue.value.listValue?[0], .dictionary(dictionary))
-//        XCTAssertEqual(o.anyValue.value.listValue?[0].dictionaryValue?["listKey"], .list(list))
-//        XCTAssertEqual(o.anyValue.value.listValue?[0].dictionaryValue?["listKey"]?.listValue?[0], .int(5))
-//
-//        XCTAssertEqual(o.anyValue.value.listValue, list2)
-//        XCTAssertEqual(o.anyValue.value.listValue?[0].dictionaryValue, dictionary)
-//        XCTAssertEqual(o.anyValue.value.listValue?[0].dictionaryValue?["listKey"]?.listValue, list)
-//        XCTAssertEqual(o.anyValue.value.listValue?[0].dictionaryValue?["listKey"]?.listValue?[0].intValue, 5)
-//    }
+            XCTAssertEqual(o.anyValue.value.listValue?[0].stringValue, "hello")
+            XCTAssertEqual(o.anyValue.value.listValue?[1].boolValue, false)
+            XCTAssertEqual(o.anyValue.value.listValue?[2].intValue, 234)
+            XCTAssertEqual(o.anyValue.value.listValue?[3].floatValue, 789.123)
+            XCTAssertEqual(o.anyValue.value.listValue?[4].doubleValue, 12345.678901)
+            XCTAssertEqual(o.anyValue.value.listValue?[5].dataValue, "a".data(using: .utf8)!)
+            XCTAssertEqual(o.anyValue.value.listValue?[6].dateValue, d)
+            XCTAssertEqual(o.anyValue.value.listValue?[7].object(SwiftStringObject.self)?.stringCol, so.stringCol)
+            XCTAssertEqual(o.anyValue.value.listValue?[8].objectIdValue, oid)
+            XCTAssertEqual(o.anyValue.value.listValue?[9].uuidValue, uuid)
+            XCTAssertEqual(o.anyValue.value.listValue?[10].decimal128Value, Decimal128(number: 567))
+        }
+        
+        let list: Array<AnyRealmValue> = [
+            .string("hello"),
+            .bool(false),
+            .int(234),
+            .float(789.123),
+            .double(12345.678901),
+            .data("a".data(using: .utf8)!),
+            .date(d),
+            .object(so),
+            .objectId(oid),
+            .uuid(uuid),
+            .decimal128(Decimal128(number: 567))
+        ]
+        
+        let list1: Array<AnyRealmValue> = [
+            .none
+        ]
+        
+        let o = AnyRealmTypeObject()
+        // Unmanaged Set
+        let l = AnyRealmValue.fromArray(list)
+        o.anyValue.value = l
+        // Unamanged Read
+        assertObject(o)
+        // Unmanaged update
+        o.anyValue.value = AnyRealmValue.fromArray(list1)
+        // Update assert
+        XCTAssertEqual(o.anyValue.value.listValue?[0], AnyRealmValue.none)
+        
+        // Add mixed collection to object
+        let realm = realmWithTestPath()
+        try! realm.write {
+            realm.add(o)
+        }
+        // Add assert
+        XCTAssertEqual(o.anyValue.value.listValue?[0], AnyRealmValue.none)
+        
+        // Update managed object
+        try! realm.write {
+            o.anyValue.value = AnyRealmValue.fromArray(list1)
+        }
+        // Update assert
+        XCTAssertEqual(o.anyValue.value.listValue?[0], AnyRealmValue.none)
+        
+        try! realm.write {
+            let object = realm.create(AnyRealmTypeObject.self, value: [ "anyValue" : list ])
+            assertObject(object)
+        }
+        
+        // Results
+        let result = realm.objects(AnyRealmTypeObject.self).last
+        
+        // Results assert
+        XCTAssertNotNil(result)
+        assertObject(result!)
+    }
 }
 
 // MARK: - List tests

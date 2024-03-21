@@ -383,6 +383,9 @@ id managedGetter(RLMProperty *prop, const char *type) {
             };
         case RLMPropertyTypeUUID:
             return makeWrapperGetter<realm::UUID>(index, prop.optional);
+        case RLMPropertyTypeDictionary:
+        case RLMPropertyTypeList:
+            REALM_UNREACHABLE();
     }
 }
 
@@ -458,6 +461,9 @@ id managedSetter(RLMProperty *prop, const char *type) {
         case RLMPropertyTypeObjectId:       return makeSetter<RLMObjectId *>(prop);
         case RLMPropertyTypeDecimal128:     return makeSetter<RLMDecimal128 *>(prop);
         case RLMPropertyTypeUUID:           return makeSetter<NSUUID *>(prop);
+        case RLMPropertyTypeDictionary:
+        case RLMPropertyTypeList:
+            REALM_UNREACHABLE();
     }
 }
 
@@ -907,10 +913,11 @@ id RLMAccessorContext::box(realm::Mixed v) {
 
 id RLMAccessorContext::box(realm::List&& l) {
     REALM_ASSERT(_parentObjectInfo);
-    REALM_ASSERT(currentProperty);
+    auto property = currentProperty ? currentProperty : _info.propertyForTableColumn(_colKey);
+    REALM_ASSERT(property);
     return [[RLMManagedArray alloc] initWithBackingCollection:std::move(l)
                                                    parentInfo:_parentObjectInfo
-                                                     property:currentProperty];
+                                                     property:property];
 }
 
 id RLMAccessorContext::box(realm::object_store::Set&& s) {
@@ -923,13 +930,11 @@ id RLMAccessorContext::box(realm::object_store::Set&& s) {
 
 id RLMAccessorContext::box(realm::object_store::Dictionary&& d) {
     REALM_ASSERT(_parentObjectInfo);
-    REALM_ASSERT(currentProperty);
-    if (currentProperty.type == RLMPropertyTypeAny) {
-        currentProperty.dictionaryKeyType = RLMPropertyTypeString;
-    }
+    auto property = currentProperty ? currentProperty : _info.propertyForTableColumn(_colKey);
+    REALM_ASSERT(property);
     return [[RLMManagedDictionary alloc] initWithBackingCollection:std::move(d)
                                                         parentInfo:_parentObjectInfo
-                                                          property:currentProperty];
+                                                          property:property];
 }
 
 id RLMAccessorContext::box(realm::Object&& o) {

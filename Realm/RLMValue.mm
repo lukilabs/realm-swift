@@ -150,7 +150,7 @@
 @implementation NSArray (RLMValue)
 
 - (RLMPropertyType)rlm_valueType {
-    return RLMPropertyTypeArray;
+    return RLMPropertyTypeList;
 }
 
 @end
@@ -158,7 +158,7 @@
 @implementation RLMArray (RLMValue)
 
 - (RLMPropertyType)rlm_valueType {
-    return RLMPropertyTypeArray;
+    return RLMPropertyTypeList;
 }
 
 @end

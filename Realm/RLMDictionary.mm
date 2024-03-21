@@ -560,4 +560,6 @@ NSString *RLMDictionaryDescriptionWithMaxDepth(NSString *name,
     return str;
 }
 
+@synthesize rlm_valueType;
+
 @end

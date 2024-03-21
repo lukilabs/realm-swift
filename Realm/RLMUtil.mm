@@ -182,6 +182,9 @@ static BOOL validateValue(__unsafe_unretained id const value,
         case RLMPropertyTypeUUID:
             return [value isKindOfClass:[NSUUID class]]
                 || ([value isKindOfClass:[NSString class]] && realm::UUID::is_valid_string([value UTF8String]));
+        case RLMPropertyTypeDictionary:
+        case RLMPropertyTypeList:
+            REALM_UNREACHABLE();
     }
     @throw RLMException(@"Invalid RLMPropertyType specified");
 }
@@ -409,7 +412,7 @@ realm::Mixed RLMObjcToMixed(__unsafe_unretained id const value,
     }
     
     switch ([v rlm_valueType]) {
-        case RLMPropertyTypeArray:
+        case RLMPropertyTypeList:
             return realm::Mixed(0, realm::CollectionType::List);
         case RLMPropertyTypeDictionary:
             return realm::Mixed(0, realm::CollectionType::Dictionary);
@@ -476,7 +479,6 @@ id RLMMixedToObjc(realm::Mixed const& mixed,
         case realm::type_UUID:
             return [[NSUUID alloc] initWithRealmUUID:mixed.get<realm::UUID>()];
         case realm::type_Dictionary:
-            property.dictionaryKeyType = RLMPropertyTypeString;
             return [[RLMManagedDictionary alloc] initWithParent:obj property:property parentInfo:*classInfo];
         case realm::type_List:
             return [[RLMManagedArray alloc] initWithParent:obj property:property parentInfo:*classInfo];
