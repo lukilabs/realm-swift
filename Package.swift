@@ -38,12 +38,12 @@ let package = Package(
             targets: ["Realm", "RealmSwift"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/realm/realm-core", .exact("5.23.8")),
+        .package(url: "https://github.com/realm/realm-core.git", .exact("5.23.8")),
     ],
     targets: [
       .target(
             name: "Realm",
-            dependencies: ["RealmCore"],
+            dependencies: [.product(name: "RealmCore", package: "realm-core")],
             path: ".",
             exclude: [
                 "Realm/NSError+RLMSync.m",
