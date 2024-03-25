@@ -76,6 +76,9 @@ let package = Package(
                 "Realm/ObjectStore/src/impl/windows",
             ],
             sources: ["Realm"],
+            resources: [
+                .copy("Realm/PrivacyInfo.xcprivacy")
+            ],
             publicHeadersPath: "include",
             cxxSettings: cxxSettings
         ),
@@ -87,6 +90,9 @@ let package = Package(
                 "Sync.swift",
                 "ObjectiveCSupport+Sync.swift",
                 "Tests",
+            ],
+            resources: [
+                .copy("PrivacyInfo.xcprivacy")
             ]
         ),
         .target(
