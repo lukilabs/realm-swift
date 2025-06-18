@@ -164,10 +164,10 @@
 
     NSUInteger i = 0;
     for (id object in _backingArray) {
-        copy->items[i++] = object;
+        copy->items[i++] = (__bridge void *)object;
     }
 
-    state->itemsPtr = (__unsafe_unretained __bridge void *)(void *)copy->items.get();
+    state->itemsPtr = (__unsafe_unretained id *)(void *)copy->items.get();
     // needs to point to something valid, but the whole point of this is so
     // that it can't be changed
     state->mutationsPtr = state->extra;
