@@ -31,7 +31,7 @@
 // See -countByEnumeratingWithState:objects:count
 @interface RLMArrayHolder : NSObject {
 @public
-    std::unique_ptr<id[]> items;
+    std::unique_ptr<void*[]> items;
 }
 @end
 @implementation RLMArrayHolder
@@ -160,14 +160,14 @@
     // we'd need to forward multiple calls to this method to the same NSArray,
     // which would require holding a reference to it somewhere.
     __autoreleasing RLMArrayHolder *copy = [[RLMArrayHolder alloc] init];
-    copy->items = std::make_unique<id[]>(self.count);
+    copy->items = std::make_unique<void *[]>(self.count);
 
     NSUInteger i = 0;
     for (id object in _backingArray) {
         copy->items[i++] = object;
     }
 
-    state->itemsPtr = (__unsafe_unretained id *)(void *)copy->items.get();
+    state->itemsPtr = (__unsafe_unretained __bridge void *)(void *)copy->items.get();
     // needs to point to something valid, but the whole point of this is so
     // that it can't be changed
     state->mutationsPtr = state->extra;
